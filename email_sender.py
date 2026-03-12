@@ -1,6 +1,7 @@
 """
 Email Sender via Gmail SMTP
 Sends the HTML digest email using Gmail's SMTP server.
+Uses port 587 + STARTTLS (more reliable on cloud runners than port 465 SSL).
 """
 
 import smtplib
@@ -21,6 +22,10 @@ def send_digest(html_body: str, text_body: str) -> bool:
         print("   App Password guide: https://myaccount.google.com/apppasswords")
         return False
 
+    if not EMAIL_RECIPIENTS:
+        print("\n⚠️  Email not sent: EMAIL_RECIPIENTS secret is not set.")
+        return False
+
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = EMAIL_SUBJECT
@@ -31,18 +36,26 @@ def send_digest(html_body: str, text_body: str) -> bool:
         msg.attach(MIMEText(text_body, "plain"))
         msg.attach(MIMEText(html_body, "html"))
 
-        print(f"  Connecting to Gmail SMTP...")
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        print(f"  Connecting to Gmail SMTP (smtp.gmail.com:587)...")
+        # Port 587 + STARTTLS is more reliable on cloud/CI runners than 465 SSL
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
             server.login(EMAIL_SENDER, EMAIL_PASSWORD)
             server.sendmail(EMAIL_SENDER, EMAIL_RECIPIENTS, msg.as_string())
 
         print(f"  ✅ Digest sent to: {', '.join(EMAIL_RECIPIENTS)}")
         return True
 
-    except smtplib.SMTPAuthenticationError:
-        print("\n❌ Authentication failed. Make sure you're using a Gmail App Password.")
-        print("   Your regular Gmail password will NOT work.")
-        print("   Get an App Password at: https://myaccount.google.com/apppasswords")
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"\n❌ Gmail authentication failed (code {e.smtp_code}): {e.smtp_error.decode(errors='replace')}")
+        print("   Checklist:")
+        print("   1. Is 2-Step Verification ON at myaccount.google.com/security ?")
+        print("   2. Is the password a Gmail App Password (not your login password)?")
+        print("      → myaccount.google.com/apppasswords — create a new one if unsure")
+        print("   3. Is IMAP enabled in Gmail settings?")
+        print("      → Gmail → Settings → See all settings → Forwarding and POP/IMAP → Enable IMAP")
         return False
     except Exception as e:
         print(f"\n❌ Failed to send email: {e}")
