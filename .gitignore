@@ -1,0 +1,31 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Generated output ──────────────────────────────────────────────────────────
+digest_preview.html    # regenerated on every run; no need to version
+
+# ── Local secrets (never commit these) ───────────────────────────────────────
+.env                   # local dotenv file with key=value pairs
+.env.*                 # .env.local, .env.production, etc.
+secrets.py             # any local secrets module
+
+# ── OS / editor noise ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

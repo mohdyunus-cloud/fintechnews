@@ -1,0 +1,65 @@
+name: Daily AI Banking Digest
+
+on:
+  # ── Automatic: runs every weekday at 07:00 UTC ──────────────────────────────
+  # Adjust the cron expression to suit your timezone:
+  #   07:00 UTC = 08:00 London (BST) / 03:00 New York (EDT)
+  # Cron syntax: minute hour day-of-month month day-of-week
+  schedule:
+    - cron: "0 7 * * 1-5"   # Mon–Fri 07:00 UTC
+
+  # ── Manual: trigger from the Actions tab at any time ────────────────────────
+  workflow_dispatch:
+    inputs:
+      preview_only:
+        description: "Generate HTML preview without sending email (true/false)"
+        required: false
+        default: "false"
+
+jobs:
+  send-digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20        # hard stop — avoids runaway API calls eating minutes
+
+    steps:
+      # 1. Check out the repository
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Set up Python
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"           # cache pip downloads between runs
+
+      # 3. Install dependencies
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # 4. Run the digest
+      #    All secrets are injected as environment variables here.
+      #    config.py reads them via os.environ.get() — no keys in code.
+      - name: Run digest
+        env:
+          EMAIL_SENDER:       ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD:     ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENTS:   ${{ secrets.EMAIL_RECIPIENTS }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.preview_only }}" = "true" ]; then
+            python3 main.py --preview
+          else
+            python3 main.py
+          fi
+
+      # 5. Upload the HTML preview as a workflow artifact (always, even on failure)
+      #    Download it from the Actions run page to inspect the digest visually.
+      - name: Upload HTML preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-preview-${{ github.run_id }}
+          path: digest_preview.html
+          retention-days: 7
