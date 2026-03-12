@@ -37,7 +37,22 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # 4. Run the digest
+      # 4. Verify secrets are present (prints char counts, never reveals values)
+      - name: Verify secrets are set
+        env:
+          EMAIL_SENDER:       ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD:     ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENTS:   ${{ secrets.EMAIL_RECIPIENTS }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          echo "EMAIL_SENDER       : ${#EMAIL_SENDER} chars"
+          echo "EMAIL_PASSWORD     : ${#EMAIL_PASSWORD} chars"
+          echo "EMAIL_RECIPIENTS   : ${#EMAIL_RECIPIENTS} chars"
+          echo "PERPLEXITY_API_KEY : ${#PERPLEXITY_API_KEY} chars"
+          echo "ANTHROPIC_API_KEY  : ${#ANTHROPIC_API_KEY} chars"
+
+      # 5. Run the digest
       #    All secrets are injected as environment variables here.
       #    config.py reads them via os.environ.get() — no keys in code.
       - name: Run digest
@@ -54,7 +69,7 @@ jobs:
             python3 main.py
           fi
 
-      # 5. Upload the HTML preview as a workflow artifact (always, even on failure)
+      # 6. Upload the HTML preview as a workflow artifact (always, even on failure)
       #    Download it from the Actions run page to inspect the digest visually.
       - name: Upload HTML preview
         if: always()

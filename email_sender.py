@@ -14,9 +14,11 @@ def send_digest(html_body: str, text_body: str) -> bool:
     Send the digest email.
     Returns True on success, False on failure.
     """
-    if EMAIL_PASSWORD == "YOUR_APP_PASSWORD_HERE":
-        print("\n⚠️  Email not sent: Please set your Gmail App Password in config.py")
-        print("   Guide: https://myaccount.google.com/apppasswords")
+    if not EMAIL_PASSWORD or EMAIL_PASSWORD == "YOUR_APP_PASSWORD_HERE":
+        print("\n⚠️  Email not sent: EMAIL_PASSWORD secret is not set.")
+        print("   GitHub Actions: Settings → Secrets and variables → Actions → New repository secret")
+        print("   Locally: export EMAIL_PASSWORD='your-gmail-app-password'")
+        print("   App Password guide: https://myaccount.google.com/apppasswords")
         return False
 
     try:
